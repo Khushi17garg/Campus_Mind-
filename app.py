@@ -113,8 +113,13 @@ final_prompt = prompt_input or chat_prompt
 
 if final_prompt:
     st.session_state.messages.append({"role": "user", "content": final_prompt})
-    with st.chat_message("user"):
-        st.markdown(final_prompt)
+    # Replace the static answer generation in app.py with streaming:
+with st.chat_message("assistant"):
+    with st.spinner("Analyzing course material..."):
+        # Stream response directly to UI
+        response_placeholder = st.empty()
+        answer, sources = generate_answer(selected_course, final_prompt)
+        st.markdown(answer)
 
     with st.chat_message("assistant"):
         with st.spinner("Searching documents & generating response..."):
@@ -138,6 +143,9 @@ if final_prompt:
                 })
             except Exception as e:
                 st.error(f"Error fetching answer: {e}")
-                
+
+
+
+
 
                 
