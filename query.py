@@ -6,7 +6,8 @@ from langchain_core.prompts import PromptTemplate
 
 # Load Embeddings & LLM
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-llm = Ollama(model="llama3.1:8b")
+# Change model name in query.py:
+llm = Ollama(model="llama3.2:3b")
 
 VECTOR_STORE_PATH = os.path.join(os.path.dirname(__file__), "vector_store")
 
