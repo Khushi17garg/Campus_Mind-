@@ -1,65 +1,38 @@
 import os
-import json
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-PROCESSED_DIR = os.path.join(os.path.dirname(__file__), "processed")
-OUTPUT_FILE = os.path.join(PROCESSED_DIR, "chunks.json")
-
-def process_documents():
+def load_and_split_documents(data_dir: str):
     """
-    Loads all PDFs across subdirectories in data/, splits them into chunks, 
-    and saves text with clean metadata (source file & page) to JSON.
+    Loads all PDFs from the given course directory and splits them into optimized chunks.
     """
-    if not os.path.exists(DATA_DIR):
-        print(f"Error: {DATA_DIR} directory does not exist.")
-        return
+    if not os.path.exists(data_dir):
+        print(f"Directory {data_dir} does not exist.")
+        return []
 
-    os.makedirs(PROCESSED_DIR, exist_ok=True)
-
-    print("📄 Loading PDF files...")
-    loader = PyPDFDirectoryLoader(DATA_DIR)
+    print(f"Loading PDFs from: {data_dir}")
+    loader = PyPDFDirectoryLoader(data_dir)
     documents = loader.load()
 
     if not documents:
-        print("⚠️ No PDF documents found in data/ folder!")
-        return
+        print("No documents found to process.")
+        return []
 
-    print(f"Loaded {len(documents)} raw pages.")
-
-    # Split documents into optimal chunks for RAG
+    # Optimized smaller chunk sizes (600 characters) for faster embedding generation on CPU
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150,
-        length_function=len
+        chunk_size=600,
+        chunk_overlap=60,
+        length_function=len,
+        is_separator_regex=False,
     )
-    
+
     chunks = text_splitter.split_documents(documents)
-    print(f"Created {len(chunks)} text chunks.")
-
-    # Extract structured metadata for exact page-level citations
-    processed_chunks = []
-    for chunk in chunks:
-        file_path = chunk.metadata.get("source", "")
-        file_name = os.path.basename(file_path) if file_path else "Unknown File"
-        page_num = chunk.metadata.get("page", 0) + 1  # 1-indexed page number
-
-        processed_chunks.append({
-            "text": chunk.page_content,
-            "metadata": {
-                "source": file_name,
-                "page": page_num
-            }
-        })
-
-    # Save processed chunks
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(processed_chunks, f, indent=4, ensure_ascii=False)
-
-    print(f"✅ Successfully processed and saved {len(processed_chunks)} chunks to {OUTPUT_FILE}")
+    print(f"Successfully processed {len(documents)} document pages into {len(chunks)} chunks.")
+    return chunks
 
 if __name__ == "__main__":
-    process_documents()
-    
+    # Test run standalone
+    base_data_path = os.path.join(os.path.dirname(__file__), "data")
+    chunks = load_and_split_documents(base_data_path)
 
+    
